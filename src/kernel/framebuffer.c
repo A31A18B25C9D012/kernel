@@ -4,6 +4,8 @@ static uint32_t *fb = (uint32_t*)FB_BASE;
 static uint32_t fb_width = FB_WIDTH;
 static uint32_t fb_height = FB_HEIGHT;
 
+void fb_put_pixel(uint32_t x, uint32_t y, uint32_t color);
+
 void fb_init(void) {
     uint16_t *vga = (uint16_t*)0xB8000;
     for (int i = 0; i < 80 * 25; i++) {
@@ -62,4 +64,4 @@ void fb_wipe(void) {
     for (uint32_t i = 0; i < fb_width * fb_height; i++) {
         vfb[i] = 0;
     }
-}
+}   

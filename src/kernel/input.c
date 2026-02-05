@@ -8,6 +8,8 @@ static uint32_t mouse_x = 0;
 static uint32_t mouse_y = 0;
 static uint8_t mouse_buttons = 0;
 
+extern void gui_handle_click(uint32_t x, uint32_t y);
+
 static inline uint8_t inb(uint16_t port) {
     uint8_t val;
     __asm__ volatile ("inb %1, %0" : "=a"(val) : "Nd"(port));
