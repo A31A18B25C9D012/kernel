@@ -15,8 +15,8 @@ os.img: build/boot.bin build/kernel.bin
 	dd if=build/kernel.bin of=os.img bs=512 seek=1 conv=notrunc 2>/dev/null
 	truncate -s 33M os.img
 
-build/boot.bin: boot/bootasm
-	$(AS) $(ASFLAGS) boot/bootasm -o build/boot.bin
+build/boot.bin: boot/boot.asm
+	$(AS) $(ASFLAGS) boot/boot.asm -o build/boot.bin
 
 build/kernel.bin: $(KERNEL_OBJS)
 	$(LD) $(LDFLAGS) $(KERNEL_OBJS) -o build/kernel.elf
@@ -56,5 +56,6 @@ clean:
 
 run: os.img
 	qemu-system-i386 -drive format=raw,file=os.img -m 512M
+
 
 .PHONY: all clean run
