@@ -1,6 +1,3 @@
-/*
-Inspired by XFCE
-*/
 #include "types.h"
 
 extern void mem_copy(void *dst, const void *src, size_t n);

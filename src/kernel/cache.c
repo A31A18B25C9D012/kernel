@@ -47,7 +47,7 @@ void cache_unlock_all(void) {
 }
 
 void cache_init(void) {
-    cache_lock_region(L2_CACHE_BASE, L2_CACHE_SIZE);
+    wbinvd();
 }
 
 void cache_wipe(void) {

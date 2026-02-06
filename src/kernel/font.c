@@ -70,12 +70,14 @@ static const uint8_t font[128][8] = {
 
 void fb_draw_char(uint32_t x, uint32_t y, char c, uint32_t color) {
     if (c < 0 || c >= 128) return;
-    
+
     for (int row = 0; row < 8; row++) {
         uint8_t byte = font[(int)c][row];
         for (int col = 0; col < 8; col++) {
             if (byte & (0x80 >> col)) {
                 fb_put_pixel(x + col, y + row, color);
+            } else {
+                fb_put_pixel(x + col, y + row, COLOR_BG);
             }
         }
     }

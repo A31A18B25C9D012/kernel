@@ -6,7 +6,7 @@ ASFLAGS = -f bin
 CFLAGS = -m32 -ffreestanding -nostdlib -fno-pie -fno-stack-protector -mno-red-zone -O2 -fno-builtin -Iinclude
 LDFLAGS = -m elf_i386 -T src/linker.ld
 
-KERNEL_OBJS = build/cache.o build/xfce.o build/memory.o build/framebuffer.o build/font.o build/gui.o build/input.o build/main.o
+KERNEL_OBJS = build/cache.o build/xfce.o build/memory.o build/framebuffer.o build/gui.o build/input.o build/teascript.o build/filesystem.o build/editor.o build/network.o build/compiler.o build/shell.o build/main.o
 
 all: os.img
 
@@ -51,11 +51,29 @@ build/gui.o: src/kernel/gui.c include/types.h | build
 build/input.o: src/kernel/input.c include/types.h | build
 	$(CC) $(CFLAGS) -c src/kernel/input.c -o $@
 
-build/main.o: src/kernel/main.c include/types.h | build
+build/teascript.o: src/kernel/teascript.c include/teascript.h include/shell.h include/types.h | build
+	$(CC) $(CFLAGS) -c src/kernel/teascript.c -o $@
+
+build/filesystem.o: src/kernel/filesystem.c include/filesystem.h include/shell.h include/types.h | build
+	$(CC) $(CFLAGS) -c src/kernel/filesystem.c -o $@
+
+build/editor.o: src/kernel/editor.c include/editor.h include/filesystem.h include/shell.h include/types.h | build
+	$(CC) $(CFLAGS) -c src/kernel/editor.c -o $@
+
+build/network.o: src/kernel/network.c include/network.h include/shell.h include/types.h | build
+	$(CC) $(CFLAGS) -c src/kernel/network.c -o $@
+
+build/compiler.o: src/kernel/compiler.c include/compiler.h include/shell.h include/filesystem.h include/teascript.h include/types.h | build
+	$(CC) $(CFLAGS) -c src/kernel/compiler.c -o $@
+
+build/shell.o: src/kernel/shell.c include/shell.h include/teascript.h include/filesystem.h include/editor.h include/network.h include/compiler.h include/types.h | build
+	$(CC) $(CFLAGS) -c src/kernel/shell.c -o $@
+
+build/main.o: src/kernel/main.c include/types.h include/teascript.h include/filesystem.h include/editor.h include/shell.h | build
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f build/* os.img
+	rm -f build/* os.img src/kernel/*.backup
 
 run: os.img
 	qemu-system-i386 -drive format=raw,file=os.img -m 512M

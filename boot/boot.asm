@@ -17,10 +17,22 @@ start:
     mov es, ax
     xor bx, bx
     mov ah, 0x02
-    mov al, 80
+    mov al, 126
     mov ch, 0
     mov cl, 2
     mov dh, 0
+    mov dl, 0x80
+    int 0x13
+    jc error
+
+    mov ax, 0x2FC0
+    mov es, ax
+    xor bx, bx
+    mov ah, 0x02
+    mov al, 20
+    mov ch, 0
+    mov cl, 2
+    mov dh, 2
     mov dl, 0x80
     int 0x13
     jc error
