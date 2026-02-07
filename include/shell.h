@@ -19,5 +19,9 @@ void shell_int_to_hex(uint32_t val, char *buf, int digits);
 void add_to_history(const char *cmd);
 const char* get_history(int index);
 int get_history_count(void);
+void shell_scroll_view_up(void);
+void shell_scroll_view_down(void);
+int shell_in_scrollback(void);
+void shell_exit_scrollback(void);
 
 #endif

@@ -1,7 +1,7 @@
 #include "types.h"
 
 static uint8_t heap[HEAP_SIZE] __attribute__((aligned(4096)));
-static size_t heap_offset = 0;
+static size_t heap_offset __attribute__((unused)) = 0;
 
 typedef struct block {
     size_t size;

@@ -15,6 +15,14 @@ static int history_count = 0;
 static int shell_cursor = 1;
 extern int current_theme;
 
+#define SCROLLBACK_LINES 100
+static uint16_t scrollback[SCROLLBACK_LINES][80];
+static int scrollback_count = 0;
+static int scrollback_head = 0;
+static int in_scrollback = 0;
+static int view_offset = 0;
+static uint16_t saved_screen[22][80];
+
 typedef struct {
     uint8_t bg, fg, panel, border, title, accent;
 } theme_t;
@@ -105,6 +113,11 @@ static uint32_t shell_parse_ip(const char *s) {
 
 static void shell_scroll_up(void) {
     volatile uint16_t *vga = (volatile uint16_t*)0xB8000;
+    for (int x = 0; x < 80; x++) {
+        scrollback[scrollback_head][x] = vga[1 * 80 + x];
+    }
+    scrollback_head = (scrollback_head + 1) % SCROLLBACK_LINES;
+    if (scrollback_count < SCROLLBACK_LINES) scrollback_count++;
     for (int y = 1; y < 22; y++) {
         for (int x = 0; x < 80; x++) {
             vga[y * 80 + x] = vga[(y + 1) * 80 + x];
@@ -113,6 +126,91 @@ static void shell_scroll_up(void) {
     for (int x = 0; x < 80; x++) {
         vga[22 * 80 + x] = (COLOR_FG << 8) | ' ';
     }
+}
+
+static void scrollback_redraw(void) {
+    volatile uint16_t *vga = (volatile uint16_t*)0xB8000;
+    for (int row = 0; row < 22; row++) {
+        int ci = scrollback_count - view_offset + row;
+        if (ci >= scrollback_count) {
+            int sr = ci - scrollback_count;
+            for (int x = 0; x < 80; x++)
+                vga[(row + 1) * 80 + x] = saved_screen[sr][x];
+        } else if (ci >= 0) {
+            int bi = (scrollback_head - scrollback_count + ci + SCROLLBACK_LINES) % SCROLLBACK_LINES;
+            for (int x = 0; x < 80; x++)
+                vga[(row + 1) * 80 + x] = scrollback[bi][x];
+        } else {
+            for (int x = 0; x < 80; x++)
+                vga[(row + 1) * 80 + x] = (COLOR_FG << 8) | ' ';
+        }
+    }
+}
+
+static void scrollback_show_indicator(void) {
+    volatile uint16_t *vga = (volatile uint16_t*)0xB8000;
+    for (int x = 0; x < 80; x++)
+        vga[23 * 80 + x] = (0x70 << 8) | ' ';
+    const char *msg = "[SCROLLBACK] Alt+PgUp/PgDn | Any key to exit";
+    int start = 17;
+    for (int i = 0; msg[i]; i++)
+        vga[23 * 80 + start + i] = (0x70 << 8) | msg[i];
+}
+
+void shell_scroll_view_up(void) {
+    if (scrollback_count == 0) return;
+    volatile uint16_t *vga = (volatile uint16_t*)0xB8000;
+    if (!in_scrollback) {
+        for (int y = 0; y < 22; y++)
+            for (int x = 0; x < 80; x++)
+                saved_screen[y][x] = vga[(y + 1) * 80 + x];
+        in_scrollback = 1;
+        view_offset = 0;
+    }
+    view_offset += 5;
+    if (view_offset > scrollback_count) view_offset = scrollback_count;
+    scrollback_redraw();
+    scrollback_show_indicator();
+}
+
+void shell_scroll_view_down(void) {
+    if (!in_scrollback) return;
+    view_offset -= 5;
+    if (view_offset <= 0) {
+        view_offset = 0;
+        in_scrollback = 0;
+        volatile uint16_t *vga = (volatile uint16_t*)0xB8000;
+        for (int y = 0; y < 22; y++)
+            for (int x = 0; x < 80; x++)
+                vga[(y + 1) * 80 + x] = saved_screen[y][x];
+        extern void draw_status_bar(void);
+        draw_status_bar();
+        fb_clear_region(0, 23, 80, 1);
+        extern void draw_prompt(void);
+        draw_prompt();
+        return;
+    }
+    scrollback_redraw();
+    scrollback_show_indicator();
+}
+
+int shell_in_scrollback(void) {
+    return in_scrollback;
+}
+
+void shell_exit_scrollback(void) {
+    if (!in_scrollback) return;
+    in_scrollback = 0;
+    view_offset = 0;
+    volatile uint16_t *vga = (volatile uint16_t*)0xB8000;
+    for (int y = 0; y < 22; y++)
+        for (int x = 0; x < 80; x++)
+            vga[(y + 1) * 80 + x] = saved_screen[y][x];
+    extern void draw_status_bar(void);
+    draw_status_bar();
+    fb_clear_region(0, 23, 80, 1);
+    extern void draw_prompt(void);
+    draw_prompt();
 }
 
 void shell_println(const char *text, uint8_t color) {
@@ -141,12 +239,14 @@ void shell_print(int line, const char *text, uint8_t color) {
 void shell_init(void) {
     history_count = 0;
     shell_cursor = 1;
+    scrollback_count = 0;
+    scrollback_head = 0;
+    in_scrollback = 0;
+    view_offset = 0;
 }
 
 void shell_execute(const char *input_buffer) {
     theme_t t = themes[current_theme];
-    const char *arg1 = shell_get_arg(input_buffer, 1);
-
     if (shell_strcmp(input_buffer, "help") == 0 || shell_strcmp(input_buffer, "help -h") == 0) {
         shell_println("=== TeaOS Commands === (use <cmd> -h for help)", t.title);
         shell_println(" System:", t.accent);

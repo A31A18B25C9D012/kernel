@@ -216,11 +216,27 @@ void handle_input(void) {
     if (key == 0) return;
 
     if (key >= 16 && key <= 21) {
+        if (shell_in_scrollback()) shell_exit_scrollback();
         vt_switch(key - 16);
         return;
     }
 
+    if (key == 22) {
+        shell_scroll_view_up();
+        return;
+    }
+    if (key == 23) {
+        shell_scroll_view_down();
+        return;
+    }
+
     vt_t *vt = &vts[current_vt];
+
+    if (shell_in_scrollback()) {
+        shell_exit_scrollback();
+        fb_draw_text(12, 23, vt->input_buffer, COLOR_FG);
+        return;
+    }
 
     if (editor_is_active()) {
         editor_handle_key(key);

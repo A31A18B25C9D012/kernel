@@ -76,6 +76,12 @@ void keyboard_handle(void) {
         } else if (scancode == 0x4D) {
             keyboard_buffer[keyboard_head] = 5;
             keyboard_head = (keyboard_head + 1) % 256;
+        } else if (scancode == 0x49 && alt_pressed) {
+            keyboard_buffer[keyboard_head] = 22;
+            keyboard_head = (keyboard_head + 1) % 256;
+        } else if (scancode == 0x51 && alt_pressed) {
+            keyboard_buffer[keyboard_head] = 23;
+            keyboard_head = (keyboard_head + 1) % 256;
         } else if (scancode == 0x1C) {
             keyboard_buffer[keyboard_head] = 10;
             keyboard_head = (keyboard_head + 1) % 256;
