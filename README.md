@@ -1,5 +1,7 @@
 TeaOS | Micro Kernel
 
+<img width="417" height="201" alt="image" src="https://github.com/user-attachments/assets/eac5f7d5-606e-47bd-8fcc-8d509e4e806e" />
+
 TeaOS is a 32-bit x86 kernel that runs on bare metal and in QEMU. It boots
 from a custom two-stage bootloader, enters protected mode, sets up VGA text
 output at 80x25, and drops into a command shell. The entire system fits in
@@ -363,20 +365,44 @@ QEMU's default hard disk geometry.
 
 ---
 
-LIMITS
+TeaOS's Micro Kernel
+> A Micro Kernel inside of a micro kernel.
 
-  1. Kernel binary          ~73 KB (max ~74 KB before bootloader needs changes)
-  2. Files                  32 total
-  3. File size              4096 bytes each
-  4. Filename length        32 characters
-  5. Editor lines           100
-  6. Editor line length     78 characters
-  7. Command input          64 characters
-  8. Command history        10 entries
-  9. TeaScript labels       16 per compilation
-  10. TeaScript code         512 bytes per compilation
-  11. Native binary          1024 bytes
-  12. Scrollback             100 lines
-  13. ARP cache              8 entries
-  14. Packet buffer          1518 bytes
-  15. Virtual terminals      6
+TeaOS ships with a built-in file called kernel.asm in the root directory. It
+is a self-contained x86 assembly program that acts as a tiny operating system
+running inside TeaOS itself. To launch it:
+```
+  asm kernel.asm kernel.bin
+  run kernel.bin
+```
+
+When the micro kernel starts it takes over the entire VGA screen and draws
+its own display. The top section shows system status information including
+three simulated tasks (Idle, Sched, Memory) all in READY state, and a memory
+readout. Below that is an interactive shell with its own prompt.
+
+The micro kernel shell prompt is "uK> " and accepts the following commands:
+```
+  exit       Shut down the micro kernel and return to the TeaOS shell
+  whoami     Display user, host, system, and architecture information
+  help       List all available micro kernel commands
+  clear      Clear the shell output area
+```
+
+The whoami command reports the current user as root on host teaos-uk, running
+on the TeaOS MicroKernel for i386 architecture.
+
+Typing exit clears the screen and returns control to the main TeaOS shell.
+The TeaOS display is restored and you can continue using the system normally.
+
+The micro kernel communicates with TeaOS through the int 0x80 syscall
+interface. It uses syscall 2 (readkey) for keyboard input and syscall 5
+(clear) to reset the shell state on exit. All screen output is done by
+writing directly to VGA memory at 0xB8000. The input buffer lives at
+physical address 0x50000, which sits between the kernel and the stack.
+
+The micro kernel runs as native x86 code inside the crash-protected
+execution environment. If anything goes wrong the exception handlers catch
+the fault and return to the TeaOS shell without crashing the system.
+
+<img width="722" height="400" alt="image" src="https://github.com/user-attachments/assets/5affb5d2-a14a-4a77-b7d3-40df3a26ee3f" />
